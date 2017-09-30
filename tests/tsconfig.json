@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "module":"amd",
+    "target": "es5",
+    "sourceMap": true,
+    "outFile": "tests.js"
+  },
+  "files":[
+    "./Tests.ts"
+  ]
+}
