@@ -3,6 +3,133 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
+define("Common/Matrix4", ["require", "exports"], function (require, exports) {
+    "use strict";
+    var Matrix4 = (function () {
+        function Matrix4(data) {
+            if (data === void 0) { data = undefined; }
+            if (data) {
+                this.data = data;
+            }
+            else {
+                this.data = new Array(16);
+            }
+        }
+        Matrix4.prototype.getValue = function (x, y) {
+            return this.data[y * 4 + x];
+        };
+        Matrix4.prototype.setValue = function (x, y, value) {
+            this.data[y * 4 + x] = value;
+        };
+        Matrix4.prototype.setValues = function (values) {
+            for (var i = 0; i < 16; i++) {
+                this.data[i] = values[i];
+            }
+        };
+        Matrix4.prototype.set = function (mat) {
+            for (var i = 0; i < 16; i++) {
+                this.data[i] = mat[i];
+            }
+        };
+        Matrix4.prototype.mul = function (mat) {
+            var sum = 0.0;
+            var buffer = new Array(16);
+            for (var i = 0; i < 4; i++) {
+                for (var k = 0; k < 4; k++) {
+                    sum = 0.0;
+                    for (var j = 0; j < 4; j++) {
+                        sum += this.getValue(j, i) * mat.getValue(k, j);
+                    }
+                    buffer[i * 4 + k] = sum;
+                }
+            }
+            this.data = buffer;
+            return this;
+        };
+        Matrix4.prototype.rotationX = function (a) {
+            var cos = Math.cos(a);
+            var sin = Math.sin(a);
+            this.setValues([
+                1.0, 0.0, 0.0, 0.0,
+                0.0, cos, sin, 0.0,
+                0.0, -sin, cos, 0.0,
+                0.0, 0.0, 0.0, 1.0
+            ]);
+            return this;
+        };
+        Matrix4.prototype.rotationY = function (a) {
+            var cos = Math.cos(a);
+            var sin = Math.sin(a);
+            this.setValues([
+                cos, 0.0, -sin, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                sin, 0.0, cos, 0.0,
+                0.0, 0.0, 0.0, 1.0
+            ]);
+            return this;
+        };
+        Matrix4.prototype.rotationZ = function (a) {
+            var cos = Math.cos(a);
+            var sin = Math.sin(a);
+            this.setValues([
+                cos, sin, 0.0, 0.0,
+                -sin, cos, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0,
+                0.0, 0.0, 0.0, 1.0
+            ]);
+            return this;
+        };
+        Matrix4.prototype.transpose = function () {
+            var tmp = 0;
+            for (var i = 0; i < 4; i++) {
+                for (var j = i + 1; j < 4; j++) {
+                    tmp = this.getValue(i, j);
+                    this.setValue(i, j, this.getValue(j, i));
+                    this.setValue(j, i, tmp);
+                }
+            }
+            return this;
+        };
+        Matrix4.prototype.identity = function () {
+            this.setValues([
+                1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0,
+                0.0, 0.0, 0.0, 1.0
+            ]);
+            return this;
+        };
+        Matrix4.prototype.rollPitchYaw = function (pos, roll, pitch, yaw) {
+            var cos_y = Math.cos(yaw);
+            var sin_y = Math.sin(yaw);
+            var cos_p = Math.cos(pitch);
+            var sin_p = Math.sin(pitch);
+            var cos_r = Math.cos(roll);
+            var sin_r = Math.sin(roll);
+            this.setValues([
+                cos_r * cos_y + sin_r * sin_p * sin_y, sin_r * cos_p, -sin_y * cos_r + sin_r * sin_p * cos_y, 0.0,
+                -sin_r * cos_y + cos_r * sin_p * sin_y, cos_r * cos_p, sin_r * sin_y + cos_r * sin_p * cos_y, 0.0,
+                cos_p * sin_y, -sin_p, cos_p * cos_y, 0.0,
+                pos.x, pos.y, pos.z, 1.0
+            ]);
+        };
+        Matrix4.prototype.equal = function (mat, e) {
+            if (e === void 0) { e = 0.001; }
+            for (var i = 0; i < 16; i++) {
+                if (Math.abs(this.data[i] - mat.data[i]) > 0.001) {
+                    return false;
+                }
+            }
+            return true;
+        };
+        Matrix4.prototype.toString = function () {
+            return this.data.join(', ');
+        };
+        return Matrix4;
+    }());
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.default = Matrix4;
+});
 define("Common/Vec3", ["require", "exports"], function (require, exports) {
     "use strict";
     var Vec3 = (function () {
@@ -105,10 +232,112 @@ define("Common/Vec3", ["require", "exports"], function (require, exports) {
             this.subtract(normal.clone().scale(2.0 * this.clone().dot(normal)));
             return this;
         };
+        Vec3.prototype.transformAsRow = function (mat, w) {
+            if (w === void 0) { w = 1.0; }
+            var x, y, z;
+            x = this.x * mat.data[0] + this.y * mat.data[4] + this.z * mat.data[8] + w * mat.data[12];
+            y = this.x * mat.data[1] + this.y * mat.data[5] + this.z * mat.data[9] + w * mat.data[13];
+            z = this.x * mat.data[2] + this.y * mat.data[6] + this.z * mat.data[10] + w * mat.data[14];
+            this.set(x, y, z);
+            return this;
+        };
+        Vec3.prototype.transformAsColumn = function (mat, w) {
+            if (w === void 0) { w = 1.0; }
+            var x, y, z;
+            x = this.x * mat.data[0] + this.y * mat.data[1] + this.z * mat.data[2] + w * mat.data[3];
+            y = this.x * mat.data[4] + this.y * mat.data[5] + this.z * mat.data[6] + w * mat.data[7];
+            z = this.x * mat.data[8] + this.y * mat.data[9] + this.z * mat.data[10] + w * mat.data[11];
+            this.set(x, y, z);
+            return this;
+        };
+        Vec3.prototype.equal = function (v, e) {
+            if (e === void 0) { e = 0.001; }
+            for (var i = 0; i < 3; i++) {
+                if (Math.abs(this.data[i] - v.data[i]) > e) {
+                    return false;
+                }
+            }
+            return true;
+        };
+        Vec3.prototype.toString = function () {
+            return this.x + ", " + this.y + ", " + this.z;
+        };
         return Vec3;
     }());
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = Vec3;
+});
+define("Raytracer/WebGLDevice", ["require", "exports"], function (require, exports) {
+    "use strict";
+    var Geometry = (function () {
+        function Geometry() {
+        }
+        return Geometry;
+    }());
+    exports.Geometry = Geometry;
+    var WebGLDevice = (function () {
+        function WebGLDevice(gl) {
+            this.gl = gl;
+        }
+        WebGLDevice.prototype.createShader = function (type, source) {
+            var shader = this.gl.createShader(type);
+            this.gl.shaderSource(shader, source);
+            this.gl.compileShader(shader);
+            var success = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS);
+            if (success) {
+                return shader;
+            }
+            console.log(this.gl.getShaderInfoLog(shader));
+            this.gl.deleteShader(shader);
+        };
+        WebGLDevice.prototype.createVertexShader = function (source) {
+            return this.createShader(this.gl.VERTEX_SHADER, source);
+        };
+        WebGLDevice.prototype.createFragmentShader = function (source) {
+            return this.createShader(this.gl.FRAGMENT_SHADER, source);
+        };
+        WebGLDevice.prototype.createProgram = function (vertexShader, fragmentShader) {
+            var program = this.gl.createProgram();
+            this.gl.attachShader(program, vertexShader);
+            this.gl.attachShader(program, fragmentShader);
+            this.gl.linkProgram(program);
+            var success = this.gl.getProgramParameter(program, this.gl.LINK_STATUS);
+            if (success) {
+                return program;
+            }
+            console.log(this.gl.getProgramInfoLog(program));
+            this.gl.deleteProgram(program);
+        };
+        WebGLDevice.prototype.setGeometry = function (geom) {
+            var positionBuffer = this.gl.createBuffer();
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(geom.positions), this.gl.STATIC_DRAW);
+            if (geom.indices && geom.indices.length > 0) {
+                var indicesBuffer = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+                this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(geom.indices), this.gl.STATIC_DRAW);
+            }
+        };
+        return WebGLDevice;
+    }());
+    exports.WebGLDevice = WebGLDevice;
+});
+define("Raytracer/Shaders", ["require", "exports"], function (require, exports) {
+    "use strict";
+    var Shaders = (function () {
+        function Shaders() {
+        }
+        Shaders.fragment = function (objectsNum, reflectionDepth) {
+            if (objectsNum === void 0) { objectsNum = 7; }
+            if (reflectionDepth === void 0) { reflectionDepth = 3; }
+            return "precision mediump float;\n\t\t\n\t\tvarying vec4 v_color;\n\t\t\n\t\t//enum Object type\n\t\t#define SPHERE 1\n\t\t#define PLANE 2\n\t\t\n\t\t#define OBJECTSNUM " + objectsNum + "\n\t\t#define REFLDEPTH " + reflectionDepth + "\n\t\t\n\t\tstruct Material \n\t\t{\n\t\t\tvec3 color;\n\t\t\tfloat specular;\n\t\t\tfloat reflection;\n\t\t\tfloat refraction;\n\t\t};\n\t\t\n\t\tstruct Object {\n\t\t\tint type;\n\t\t\tvec3 pos;\n\t\t\tfloat r;\n\t\t\tvec3 normal;\n\t\t\tMaterial mat;\n\t\t};\n\t\t\n\t\tstruct Ray {\n\t\t\tvec3 start;\n\t\t\tvec3 dir;\n\t\t};\n\t\t\n\t\tstruct Camera {\n\t\t\tvec3 pos;\n\t\t\t\n\t\t\tvec3 front;\n\t\t\tvec3 right;\n\t\t\tvec3 up;\n\t\t\n\t\t\tfloat zNear;\n\t\t\tfloat screenW;\n\t\t\tfloat screenH;\n\t\t\tmat4 worldMat;\n\t\t};\n\t\t\n\t\tuniform Camera camera;\n\t\tuniform Object objects[OBJECTSNUM];\n\t\tuniform vec3 light;\n\t\t\n\t\t\n\t\tvoid CreateRay(in vec3 start, in vec3 dir, out Ray ray)\n\t\t{\n\t\t\tray.start = start;\n\t\t\tray.dir = dir;\n\t\t}\n\t\t\n\t\tvec3 GetNormalInPoint(in Object obj, vec3 point) \n\t\t{\n\t\t\tif (obj.type == SPHERE) {\n\t\t\t\treturn normalize(point - obj.pos);\n\t\t\t}\n\t\t\telse if (obj.type == PLANE) {\n\t\t\t\treturn obj.normal;\n\t\t\t}\n\t\t}\n\t\t\n\t\tfloat ComputeDiffuse(vec3 lightPos, vec3 cameraPos, vec3 pointPos, in Object obj) \n\t\t{\n\t\t\tvec3 toCamera = normalize(cameraPos - pointPos);\n\t\t\tvec3 toLight = normalize(lightPos - pointPos);\n\t\t\tvec3 normal = GetNormalInPoint(obj, pointPos);\n\t\t\n\t\t\tfloat attenuation = max(min(1.0 - length(lightPos - pointPos) / 200.0, 1.0), 0.0);\n\t\t\t\n\t\t\tfloat scale = 5.0;\n\t\t\n\t\t\tif (obj.type == PLANE && obj.normal.y == 1.0) {\n\t\t\t\tif ((mod(pointPos.x / scale, 2.0) < 1.0 && mod(pointPos.z / scale, 2.0) > 1.0) || \n\t\t\t\t(mod(pointPos.x / scale, 2.0) > 1.0 && mod(pointPos.z / scale, 2.0) < 1.0)) {\n\t\t\t\t\treturn dot(normal, toLight)*0.4*attenuation;\t\n\t\t\t\t}\n\t\t\t}\n\t\t\n\t\t\n\t\t\treturn min(max(dot(normal, toLight)*attenuation, 0.0), 1.0);\n\t\t}\n\t\t\n\t\tfloat SphereHitTest(in Object sphere, out Ray ray)\n\t\t{\n\t\t\tfloat b = dot((ray.start - sphere.pos)*2.0, ray.dir);\n\t\t\tfloat c = dot((ray.start - sphere.pos), (ray.start - sphere.pos)) - pow(sphere.r, 2.0);\n\t\t\n\t\t\tfloat d = pow(b, 2.0) - 4.0*c;\n\t\t\n\t\t\tfloat t1 = (-b + sqrt(d)) / 2.0; \n\t\t\tfloat t2 = (-b - sqrt(d)) / 2.0;\n\t\t\n\t\t\tif (d >= 0.0)\n\t\t\t{\n\t\t\t\tif (t1 > 0.0 && t2 > 0.0) return min(t1, t2);\n\t\t\t}\n\t\t\n\t\t\treturn -1.0;\n\t\t}\n\t\t\n\t\tfloat PlaneHitTest(in Object plane, out Ray ray)\n\t\t{\n\t\t\treturn dot(plane.pos - ray.start, plane.normal) / dot(ray.dir, plane.normal);\n\t\t}\n\t\t\n\t\tfloat HitTest(Object obj, out Ray ray) \n\t\t{\n\t\t\tif (obj.type == SPHERE) {\n\t\t\t\treturn SphereHitTest(obj, ray);\n\t\t\t}\n\t\t\telse if (obj.type == PLANE) {\n\t\t\t\treturn PlaneHitTest(obj, ray);\n\t\t\t}\n\t\t}\n\t\t\n\t\t\n\t\tfloat CastRay(Ray ray, int except, out vec3 hitPoint, out Object hitObject, out int objIndex)\n\t\t{\n\t\t\tfloat minDist = -1.0;\n\t\t\tfloat dist;\n\t\t\n\t\t\tfor (int j=0;j<OBJECTSNUM;j++) {\n\t\t\t\t\n\t\t\t\tif (j == except) continue;\n\t\t\n\t\t\t\tdist = HitTest(objects[j], ray);\n\t\t\t\tif (dist > 0.0  && (minDist < 0.0 || dist < minDist)) {\n\t\t\t\t\tminDist = dist;\n\t\t\t\t\thitObject = objects[j];\n\t\t\t\t\tobjIndex = j;\n\t\t\t\t}\n\t\t\t}\n\t\t\n\t\t\tif (minDist > 0.0) \n\t\t\t{\n\t\t\t\thitPoint = ray.start+ray.dir*minDist;\n\t\t\t\treturn minDist;\n\t\t\t}\n\t\t\n\t\t\treturn -1.0;\n\t\t}\n\t\t\n\t\t\n\t\tvoid main() {\n\t\t\t\n\t\t\n\t\t\tvec3 pixel;\n\t\t\n\t\t\tpixel.x = v_color.x * camera.screenW/2.0;\n\t\t\tpixel.y = v_color.y * camera.screenH/2.0;\n\t\t\tpixel.z = camera.zNear;\n\t\t\tpixel = (camera.worldMat * vec4(pixel, 1.0)).xyz;\n\t\t\t\n\t\t\n\t\t\tRay ray, shadowRay;\n\t\t\n\t\t\tvec3 hitPoint;\n\t\t\tvec3 shadowHitPoint;\n\t\t\tObject hitObject;\n\t\t\tObject shadowCaster;\n\t\t\tint hitObjIndex;\n\t\t\tfloat cumulatedDiffuse = 1.0;\n\t\t\tfloat cumulatedReflection = 1.0;\n\t\t\tvec3 color = vec3(0.0, 0.0, 0.0);\n\t\t\tint lastObject = -1;\n\t\t\tfloat dist = -1.0;\n\t\t\n\t\t\tfor (int i=0;i<REFLDEPTH;i++)\n\t\t\t{\n\t\t\t\tif (i > 0) {\n\t\t\t\t\tif (hitObject.mat.reflection > 0.0) {\n\t\t\t\t\t\tvec3 n = GetNormalInPoint(hitObject, hitPoint);\n\t\t\t\t\t\tCreateRay(hitPoint, normalize(reflect(ray.dir, n)), ray);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\telse {\n\t\t\t\t\tCreateRay(camera.pos, normalize(pixel - camera.pos), ray);\n\t\t\t\t}\n\t\t\n\t\t\t\tif (CastRay(ray, lastObject, hitPoint, hitObject, hitObjIndex) > 0.0) {\n\t\t\n\t\t\t\t\tlastObject = hitObjIndex;\n\t\t\t\t\tCreateRay(hitPoint, normalize(light - hitPoint), shadowRay);\n\t\t\t\t\tdist = CastRay(shadowRay, lastObject, shadowHitPoint, shadowCaster, hitObjIndex);\n\t\t\t\t\tif (dist > 0.0 && dist < length(light - hitPoint)) {\n\t\t\t\t\t\tcumulatedDiffuse *= 0.7;\n\t\t\t\t\t}\n\t\t\n\t\t\t\t\tcumulatedDiffuse *= ComputeDiffuse(light, camera.pos, hitPoint, hitObject);\n\t\t\t\t\tcolor += hitObject.mat.color*cumulatedDiffuse*cumulatedReflection*(1.0-hitObject.mat.reflection);\n\t\t\t\t\tcumulatedReflection *= hitObject.mat.reflection;\n\t\t\n\t\t\t\t\tif (!(hitObject.mat.reflection > 0.0)) {\n\t\t\t\t\t\tbreak;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t\n\t\t\tgl_FragColor = vec4(color, 1);\n\t\t}";
+        };
+        Shaders.vertex = function () {
+            return "attribute vec4 a_position;\n\t\t\n\t\tvarying vec4 v_color;\n\t\t\n\t\tvoid main() {\n\t\t\n\t\t\tgl_Position = a_position;\n\t\t\tv_color = a_position;\n\t\t}";
+        };
+        return Shaders;
+    }());
+    exports.Shaders = Shaders;
 });
 define("Common/OrthogonalBasis", ["require", "exports", "Common/Vec3"], function (require, exports, Vec3_1) {
     "use strict";
@@ -124,11 +353,87 @@ define("Common/OrthogonalBasis", ["require", "exports", "Common/Vec3"], function
     exports.default = OrthogonalBasis;
     ;
 });
-define("Scene/SceneEntity", ["require", "exports"], function (require, exports) {
+define("Scene/SceneEntity", ["require", "exports", "Common/Matrix4"], function (require, exports, Matrix4_1) {
     "use strict";
     var SceneEntity = (function () {
         function SceneEntity() {
+            this.dirty = true;
+            this._transformation = new Matrix4_1.default();
+            this._pitch = 0.0;
+            this._roll = 0.0;
+            this._yaw = 0.0;
         }
+        Object.defineProperty(SceneEntity.prototype, "pos", {
+            get: function () {
+                this.dirty = true;
+                return this._pos;
+            },
+            set: function (p) {
+                this._pos = p;
+                this.dirty = true;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(SceneEntity.prototype, "yaw", {
+            get: function () {
+                return this._yaw;
+            },
+            set: function (yaw) {
+                this._yaw = yaw;
+                this.dirty = true;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(SceneEntity.prototype, "pitch", {
+            get: function () {
+                return this._pitch;
+            },
+            set: function (pitch) {
+                this._pitch = pitch;
+                this.dirty = true;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(SceneEntity.prototype, "roll", {
+            get: function () {
+                return this._roll;
+            },
+            set: function (roll) {
+                this._roll = roll;
+                this.dirty = true;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        SceneEntity.prototype.clampTo360 = function (angle) {
+            while (angle > 2 * 3.1415)
+                angle -= 2 * 3.1415;
+            while (angle < 0.0)
+                angle += 2 * 3.1415;
+        };
+        Object.defineProperty(SceneEntity.prototype, "transformation", {
+            get: function () {
+                if (this.dirty) {
+                    this.clampTo360(this._yaw);
+                    this.clampTo360(this._pitch);
+                    this.clampTo360(this._roll);
+                    this._transformation.rollPitchYaw(this._pos, this._roll, this._pitch, this._yaw);
+                    this.basis.right.set(1.0, 0.0, 0.0);
+                    this.basis.up.set(0.0, 1.0, 0.0);
+                    this.basis.front.set(0.0, 0.0, 1.0);
+                    this.basis.front.transformAsRow(this._transformation, 0.0).normalize();
+                    this.basis.right.transformAsRow(this._transformation, 0.0).normalize();
+                    this.basis.up.transformAsRow(this._transformation, 0.0).normalize();
+                    this.dirty = false;
+                }
+                return this._transformation;
+            },
+            enumerable: true,
+            configurable: true
+        });
         return SceneEntity;
     }());
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -158,8 +463,7 @@ define("Scene/Camera", ["require", "exports", "Scene/SceneEntity", "Common/Vec3"
         }
         return Camera;
     }(SceneEntity_1.default));
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.default = Camera;
+    exports.Camera = Camera;
     ;
 });
 define("Common/Color", ["require", "exports"], function (require, exports) {
@@ -259,38 +563,7 @@ define("Common/Color", ["require", "exports"], function (require, exports) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = Color;
 });
-define("Raytracer/Ray", ["require", "exports"], function (require, exports) {
-    "use strict";
-    var Ray = (function () {
-        function Ray() {
-        }
-        Ray.prototype.set = function (start, lookAt) {
-            this.start = start;
-            this.dir = lookAt.clone().subtract(start).normalize(); // norm(lookAt - start)
-        };
-        return Ray;
-    }());
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.default = Ray;
-});
-define("Raytracer/HitTestResult", ["require", "exports"], function (require, exports) {
-    "use strict";
-    var HitTestResult = (function () {
-        function HitTestResult(result, distance, ray, object) {
-            this.result = result;
-            this.distance = distance;
-            this.ray = ray;
-            this.object = object;
-            if (this.result) {
-                this.hitPoint = this.ray.start.clone().add(this.ray.dir.clone().scale(this.distance));
-            }
-        }
-        return HitTestResult;
-    }());
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.default = HitTestResult;
-});
-define("Scene/Object", ["require", "exports", "Scene/SceneEntity", "Raytracer/HitTestResult"], function (require, exports, SceneEntity_2, HitTestResult_1) {
+define("Scene/Object", ["require", "exports", "Scene/SceneEntity"], function (require, exports, SceneEntity_2) {
     "use strict";
     var Material = (function () {
         function Material(color, specular, reflection) {
@@ -318,23 +591,6 @@ define("Scene/Object", ["require", "exports", "Scene/SceneEntity", "Raytracer/Hi
             this.pos = pos;
             this.r = radius;
         }
-        Sphere.prototype.HitTest = function (ray) {
-            var b = ray.start.clone().subtract(this.pos).scale(2).dot(ray.dir);
-            var a = ray.start.clone().subtract(this.pos);
-            var c = a.dot(a) - this.r * this.r;
-            var d = b * b - 4 * c;
-            var t1 = (-b + Math.sqrt(d)) / 2;
-            var t2 = (-b - Math.sqrt(d)) / 2;
-            if (d >= 0) {
-                if (t1 > 0.0 && t2 > 0.0) {
-                    return new HitTestResult_1.default(true, Math.min(t1, t2), ray, this);
-                }
-            }
-            return new HitTestResult_1.default(false, -1.0, ray, this);
-        };
-        Sphere.prototype.GetNormalInPoint = function (point) {
-            return point.clone().subtract(this.pos).normalize();
-        };
         return Sphere;
     }(Object));
     exports.Sphere = Sphere;
@@ -345,209 +601,465 @@ define("Scene/Object", ["require", "exports", "Scene/SceneEntity", "Raytracer/Hi
             this.pos = pos;
             this.normal = normal;
         }
-        Plane.prototype.HitTest = function (ray) {
-            var dist = this.pos.clone().subtract(ray.start).dot(this.normal) / ray.dir.clone().dot(this.normal);
-            if (dist > 0) {
-                return new HitTestResult_1.default(true, dist, ray, this);
-            }
-            return new HitTestResult_1.default(false, -1.0, ray, this);
-        };
-        Plane.prototype.GetNormalInPoint = function (p) {
-            return this.normal;
-        };
         return Plane;
     }(Object));
     exports.Plane = Plane;
 });
-define("App", ["require", "exports", "Scene/Camera", "Common/Color", "Common/Vec3", "Scene/Object"], function (require, exports, Camera_1, Color_1, Vec3_3, Object_1) {
+define("Raytracer/WebGLRaytracer", ["require", "exports", "Raytracer/WebGLDevice", "Raytracer/WebGLDevice", "Raytracer/Shaders", "Scene/Object"], function (require, exports, WebGLDevice_1, WebGLDevice_2, Shaders_1, Object_1) {
     "use strict";
-    var canvas = document.querySelector('#myCanvas');
-    var gl = canvas.getContext("webgl");
-    //let w = Math.min(window.innerWidth, window.innerHeight);
-    //let h = w;
-    var w = window.innerWidth;
-    var h = window.innerHeight;
-    //console.log(w);
-    w = 600;
-    h = 600;
-    canvas.width = w;
-    canvas.height = h;
-    function createShader(gl, type, source) {
-        var shader = gl.createShader(type);
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-        var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-        if (success) {
-            return shader;
+    var WebGLRaytracer = (function () {
+        function WebGLRaytracer(canvas) {
+            this.numReflections = 4;
+            this.numObjects = 11;
+            this.gl = canvas.getContext("experimental-webgl");
+            if (!this.gl) {
+                this.gl = canvas.getContext("webgl");
+            }
+            if (!this.gl) {
+                alert("Your browser do not supports WebGL!");
+            }
+            this.device = new WebGLDevice_2.WebGLDevice(this.gl);
+            this.init();
         }
-        console.log(gl.getShaderInfoLog(shader));
-        gl.deleteShader(shader);
-    }
-    function createProgram(gl, vertexShader, fragmentShader) {
-        var program = gl.createProgram();
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        gl.linkProgram(program);
-        var success = gl.getProgramParameter(program, gl.LINK_STATUS);
-        if (success) {
-            return program;
+        WebGLRaytracer.prototype.prepareGeometry = function () {
+            this.quad = new WebGLDevice_1.Geometry();
+            this.quad.positions = [
+                -1, 1,
+                1, 1,
+                1, -1,
+                -1, -1 //left-bottom
+            ];
+            this.quad.indices = [0, 1, 3, 1, 2, 3];
+            this.device.setGeometry(this.quad);
+        };
+        WebGLRaytracer.prototype.setNumberOfObjects = function (numObjects) {
+            if (numObjects != this.numObjects) {
+                this.numObjects = numObjects;
+                this.prepareShaders();
+            }
+        };
+        WebGLRaytracer.prototype.prepareShaders = function () {
+            var vertexShader = this.device.createVertexShader(Shaders_1.Shaders.vertex());
+            var fragmentShader = this.device.createFragmentShader(Shaders_1.Shaders.fragment(this.numObjects, this.numReflections));
+            this.program = this.device.createProgram(vertexShader, fragmentShader);
+            var positionAttributeLocation = this.gl.getAttribLocation(this.program, "a_position");
+            this.gl.enableVertexAttribArray(positionAttributeLocation);
+            this.gl.vertexAttribPointer(positionAttributeLocation, 2, this.gl.FLOAT, false, 0, 0);
+            this.gl.useProgram(this.program);
+        };
+        WebGLRaytracer.prototype.draw = function () {
+            this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_SHORT, 0);
+        };
+        WebGLRaytracer.prototype.init = function () {
+            this.prepareGeometry();
+            this.prepareShaders();
+            this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+            this.gl.clearColor(0, 0, 0, 0);
+            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        };
+        WebGLRaytracer.prototype.passLight = function (name, light) {
+            var lightLoc = this.gl.getUniformLocation(this.program, "" + name);
+            this.gl.uniform3fv(lightLoc, light.data);
+        };
+        WebGLRaytracer.prototype.passCamera = function (name, camera) {
+            var posLoc = this.gl.getUniformLocation(this.program, name + ".pos");
+            var frontLoc = this.gl.getUniformLocation(this.program, name + ".front");
+            var upLoc = this.gl.getUniformLocation(this.program, name + ".up");
+            var rightLoc = this.gl.getUniformLocation(this.program, name + ".right");
+            var zNearLoc = this.gl.getUniformLocation(this.program, name + ".zNear");
+            var screenWLoc = this.gl.getUniformLocation(this.program, name + ".screenW");
+            var screenHLoc = this.gl.getUniformLocation(this.program, name + ".screenH");
+            var cameraWorld = this.gl.getUniformLocation(this.program, name + ".worldMat");
+            this.gl.uniform3fv(posLoc, camera.pos.data);
+            this.gl.uniform3fv(frontLoc, camera.basis.front.data);
+            this.gl.uniform3fv(upLoc, camera.basis.up.data);
+            this.gl.uniform3fv(rightLoc, camera.basis.right.data);
+            this.gl.uniform1f(zNearLoc, camera.zNear);
+            this.gl.uniform1f(screenWLoc, camera.screenW);
+            this.gl.uniform1f(screenHLoc, camera.screenH);
+            this.gl.uniformMatrix4fv(cameraWorld, false, camera.transformation.data);
+        };
+        WebGLRaytracer.prototype.passMaterial = function (name, mat) {
+            var colorLoc = this.gl.getUniformLocation(this.program, name + ".color");
+            var specLoc = this.gl.getUniformLocation(this.program, name + ".specular");
+            var reflLoc = this.gl.getUniformLocation(this.program, name + ".reflection");
+            this.gl.uniform3f(colorLoc, mat.color.r / 255.0, mat.color.g / 255.0, mat.color.b / 255.0);
+            this.gl.uniform1f(specLoc, mat.specular);
+            this.gl.uniform1f(reflLoc, mat.reflection);
+        };
+        WebGLRaytracer.prototype.passObject = function (name, obj) {
+            if (!obj) {
+                var typeLoc = this.gl.getUniformLocation(this.program, name + ".type");
+                this.gl.uniform1i(typeLoc, 0);
+                return;
+            }
+            if (obj instanceof Object_1.Sphere) {
+                var sphere = obj;
+                var typeLoc = this.gl.getUniformLocation(this.program, name + ".type");
+                var posLoc = this.gl.getUniformLocation(this.program, name + ".pos");
+                var rLoc = this.gl.getUniformLocation(this.program, name + ".r");
+                this.gl.uniform1i(typeLoc, 1);
+                this.gl.uniform3fv(posLoc, sphere.pos.data);
+                this.gl.uniform1f(rLoc, sphere.r);
+            }
+            else if (obj instanceof Object_1.Plane) {
+                var plane = obj;
+                var typeLoc = this.gl.getUniformLocation(this.program, name + ".type");
+                var posLoc = this.gl.getUniformLocation(this.program, name + ".pos");
+                var normalLoc = this.gl.getUniformLocation(this.program, name + ".normal");
+                this.gl.uniform1i(typeLoc, 2);
+                this.gl.uniform3fv(posLoc, plane.pos.data);
+                this.gl.uniform3fv(normalLoc, plane.normal.data);
+            }
+            this.passMaterial(name + ".mat", obj.material);
+        };
+        return WebGLRaytracer;
+    }());
+    exports.WebGLRaytracer = WebGLRaytracer;
+});
+define("Scene/Scene", ["require", "exports"], function (require, exports) {
+    "use strict";
+    var Scene = (function () {
+        function Scene() {
+            this.objects = [];
+            this.isBuilt = false;
         }
-        console.log(gl.getProgramInfoLog(program));
-        gl.deleteProgram(program);
-    }
-    var t1 = new Date().getMilliseconds();
-    var vertexShaderSource = document.querySelector("#vs").textContent;
-    var fragmentShaderSource = document.querySelector("#ps").textContent;
-    var vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-    var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-    var program = createProgram(gl, vertexShader, fragmentShader);
-    var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-    var positions = [
-        -1, 1,
-        1, 1,
-        1, -1,
-        -1, -1 //left-bottom
-    ];
-    var indices = [0, 1, 3, 1, 2, 3];
-    var texCoords = [
-        0, 0,
-        1, 0,
-        1, 1,
-        0, 1,
-    ];
-    var positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-    var indicesBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(program);
-    var camera = new Camera_1.default(new Vec3_3.default(0, 0, -49), new Vec3_3.default(0, 0, 0), Math.PI / 3, Math.PI / 3 * (canvas.height / canvas.width));
-    var objects = new Array();
-    var mRed = new Object_1.Material(Color_1.default.red, 0, 0.2);
-    var mBlue = new Object_1.Material(Color_1.default.blue, 0, 0.5);
-    var mGreen = new Object_1.Material(Color_1.default.green, 0, 0);
-    var mWhite = new Object_1.Material(Color_1.default.white);
-    var mMirror = new Object_1.Material(Color_1.default.blue, 0, 0.4);
-    var mYellow = new Object_1.Material(Color_1.default.yellow, 0);
-    var mRedSolid = new Object_1.Material(Color_1.default.red, 0);
-    var s1 = new Object_1.Sphere(new Vec3_3.default(-10, 0.0, 0.0), 5);
-    var s2 = new Object_1.Sphere(new Vec3_3.default(0, -13.0, -30.0), 10);
-    var s3 = new Object_1.Sphere(new Vec3_3.default(0, 10.0, -10.0), 5);
-    var ceil = new Object_1.Plane(new Vec3_3.default(0, 50, 0), new Vec3_3.default(0, -1, 0));
-    var floor = new Object_1.Plane(new Vec3_3.default(0, -5, 0), new Vec3_3.default(0, 1, 0));
-    var front = new Object_1.Plane(new Vec3_3.default(0, 0, 50), new Vec3_3.default(0, 0, -1));
-    var back = new Object_1.Plane(new Vec3_3.default(0, 0, -50), new Vec3_3.default(0, 0, 1));
-    var right = new Object_1.Plane(new Vec3_3.default(50, 0, 0), new Vec3_3.default(-1, 0, 0));
-    var left = new Object_1.Plane(new Vec3_3.default(-50, 0, 0), new Vec3_3.default(1, 0, 0));
-    s1.material = mRed;
-    s2.material = mGreen;
-    s3.material = mBlue;
-    ceil.material = mWhite;
-    floor.material = mMirror;
-    right.material = mYellow;
-    left.material = mGreen;
-    front.material = mRedSolid;
-    back.material = mWhite;
-    objects.push(s1);
-    //objects.push(s2);
-    objects.push(s3);
-    objects.push(ceil);
-    objects.push(floor);
-    objects.push(front);
-    objects.push(back);
-    objects.push(right);
-    objects.push(left);
-    function passCamera(name, camera) {
-        var posLoc = gl.getUniformLocation(program, name + ".pos");
-        var lookDirLoc = gl.getUniformLocation(program, name + ".lookDir");
-        var zNearLoc = gl.getUniformLocation(program, name + ".zNear");
-        var screenWLoc = gl.getUniformLocation(program, name + ".screenW");
-        var screenHLoc = gl.getUniformLocation(program, name + ".screenH");
-        gl.uniform3fv(posLoc, camera.pos.data);
-        gl.uniform3fv(lookDirLoc, camera.basis.front.data);
-        gl.uniform1f(zNearLoc, camera.zNear);
-        gl.uniform1f(screenWLoc, camera.screenW);
-        gl.uniform1f(screenHLoc, camera.screenH);
-    }
-    function passMaterial(name, mat) {
-        var colorLoc = gl.getUniformLocation(program, name + ".color");
-        var specLoc = gl.getUniformLocation(program, name + ".specular");
-        var reflLoc = gl.getUniformLocation(program, name + ".reflection");
-        gl.uniform3f(colorLoc, mat.color.r / 255.0, mat.color.g / 255.0, mat.color.b / 255.0);
-        gl.uniform1f(specLoc, mat.specular);
-        gl.uniform1f(reflLoc, mat.reflection);
-    }
-    function passObject(name, obj) {
-        if (obj instanceof Object_1.Sphere) {
-            var sphere = obj;
-            var typeLoc = gl.getUniformLocation(program, name + ".type");
-            var posLoc = gl.getUniformLocation(program, name + ".pos");
-            var rLoc = gl.getUniformLocation(program, name + ".r");
-            gl.uniform1i(typeLoc, 0);
-            gl.uniform3fv(posLoc, sphere.pos.data);
-            gl.uniform1f(rLoc, sphere.r);
+        return Scene;
+    }());
+    exports.Scene = Scene;
+});
+define("App/AnimationLoop", ["require", "exports"], function (require, exports) {
+    "use strict";
+    var AnimationLoop = (function () {
+        function AnimationLoop() {
+            this.startTime = null;
+            this.lastTime = null;
+            this.isPaused = false;
+            this.framesPerSecond = 0;
+            this.msInSecond = 0;
         }
-        else if (obj instanceof Object_1.Plane) {
-            var plane = obj;
-            var typeLoc = gl.getUniformLocation(program, name + ".type");
-            var posLoc = gl.getUniformLocation(program, name + ".pos");
-            var normalLoc = gl.getUniformLocation(program, name + ".normal");
-            gl.uniform1i(typeLoc, 1);
-            gl.uniform3fv(posLoc, plane.pos.data);
-            gl.uniform3fv(normalLoc, plane.normal.data);
+        AnimationLoop.prototype.togglePause = function () {
+            this.isPaused = !this.isPaused;
+            if (!this.isPaused) {
+                requestAnimationFrame(this.step.bind(this));
+            }
+        };
+        AnimationLoop.prototype.pause = function () {
+            this.isPaused = true;
+        };
+        AnimationLoop.prototype.start = function (stepAction, onChangeFps) {
+            this.isPaused = false;
+            this.stepAction = stepAction;
+            this.onChangeFPS = onChangeFps;
+            requestAnimationFrame(this.step.bind(this));
+        };
+        AnimationLoop.prototype.step = function (now) {
+            if (!this.start) {
+                this.startTime = now;
+                this.lastTime = now;
+            }
+            if (this.isPaused == true) {
+                return;
+            }
+            var dt = now - this.lastTime;
+            this.msInSecond += dt;
+            this.lastTime = now;
+            this.stepAction(dt, this.startTime, now);
+            this.framesPerSecond++;
+            if (this.msInSecond > 1000) {
+                this.onChangeFPS(this.framesPerSecond);
+                this.framesPerSecond = 0;
+                this.msInSecond = 0;
+            }
+            requestAnimationFrame(this.step.bind(this));
+        };
+        return AnimationLoop;
+    }());
+    exports.AnimationLoop = AnimationLoop;
+});
+define("App/Scenes/Scene1", ["require", "exports", "Common/Color", "Common/Vec3", "Scene/Scene", "Scene/Object"], function (require, exports, Color_1, Vec3_3, Scene_1, Object_2) {
+    "use strict";
+    var Scene1 = (function (_super) {
+        __extends(Scene1, _super);
+        function Scene1() {
+            _super.apply(this, arguments);
+            this.bottom = new Object_2.Plane(new Vec3_3.default(0.0, -5.0, 0.0), new Vec3_3.default(0.0, 1.0, 0.0)); //podloga
+            this.top = new Object_2.Plane(new Vec3_3.default(0.0, 80.0, 0.0), new Vec3_3.default(0.0, -1.0, 0.0));
+            this.front = new Object_2.Plane(new Vec3_3.default(0.0, 0.0, 80.0), new Vec3_3.default(0.0, 0.0, -1.0)); //przod
+            this.back = new Object_2.Plane(new Vec3_3.default(0.0, 0.0, -80.0), new Vec3_3.default(0.0, 0.0, 1.0)); // tyl
+            this.leftPlane = new Object_2.Plane(new Vec3_3.default(-80.0, 0.0, 0.0), new Vec3_3.default(1.0, 0.0, 0.0)); // 
+            this.rightPlane = new Object_2.Plane(new Vec3_3.default(80.0, 0.0, 0.0), new Vec3_3.default(-1.0, 0.0, 0.0)); // 
+            this.s1 = new Object_2.Sphere(new Vec3_3.default(0.0, 0.0, 0.0), 5);
+            this.s2 = new Object_2.Sphere(new Vec3_3.default(-12.0, 0.0, 0.0), 5);
+            this.s3 = new Object_2.Sphere(new Vec3_3.default(-24.0, 0.0, 0.0), 5);
+            this.s4 = new Object_2.Sphere(new Vec3_3.default(12.0, 0.0, 0.0), 5);
+            this.s5 = new Object_2.Sphere(new Vec3_3.default(24.0, 0.0, 0.0), 5);
         }
-        passMaterial(name + ".mat", obj.material);
-    }
-    passCamera("camera", camera);
-    objects.forEach(function (obj, index) {
-        passObject("objects[" + index + "]", obj);
-    });
-    t1 = new Date().getMilliseconds();
-    //passCameraData(camera);
-    gl.enableVertexAttribArray(positionAttributeLocation);
-    gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-    var start = null;
-    var last = null;
-    var stop = false;
-    var frames = 0;
-    var fps = 0;
-    var second = 0;
-    var fpsElement = document.querySelector(".fpsValue");
-    function render(now) {
-        if (!start) {
-            start = now;
-            last = now;
+        Scene1.prototype.build = function () {
+            if (this.isBuilt)
+                return;
+            var yellow = new Object_2.Material(Color_1.default.yellow);
+            var blue = new Object_2.Material(Color_1.default.blue);
+            var green = new Object_2.Material(new Color_1.default(51, 255, 51));
+            var white = new Object_2.Material(Color_1.default.white);
+            var red = new Object_2.Material(Color_1.default.red);
+            var redmirror = new Object_2.Material(Color_1.default.red, 0, 0.4);
+            var yellowmirror = new Object_2.Material(Color_1.default.yellow, 0, 0.4);
+            this.s1.material = yellowmirror;
+            this.s2.material = red;
+            this.s3.material = green;
+            this.s4.material = blue;
+            this.s5.material = white;
+            this.front.material = white;
+            this.bottom.material = redmirror;
+            this.back.material = white;
+            this.leftPlane.material = green;
+            this.rightPlane.material = blue;
+            this.top.material = yellow;
+            this.objects.push(this.s1);
+            this.objects.push(this.s2);
+            this.objects.push(this.s3);
+            this.objects.push(this.s4);
+            this.objects.push(this.s5);
+            this.objects.push(this.front);
+            this.objects.push(this.bottom);
+            this.objects.push(this.back);
+            this.objects.push(this.leftPlane);
+            this.objects.push(this.rightPlane);
+            this.objects.push(this.top);
+            this.light = new Vec3_3.default(0, 20, -20);
+            this.isBuilt = true;
+        };
+        Scene1.prototype.update = function (dt, start, now) {
+        };
+        return Scene1;
+    }(Scene_1.Scene));
+    exports.Scene1 = Scene1;
+});
+define("App/Scenes/Scene2", ["require", "exports", "Common/Color", "Common/Vec3", "Scene/Scene", "Scene/Object"], function (require, exports, Color_2, Vec3_4, Scene_2, Object_3) {
+    "use strict";
+    var Scene2 = (function (_super) {
+        __extends(Scene2, _super);
+        function Scene2() {
+            _super.apply(this, arguments);
+            this.bottom = new Object_3.Plane(new Vec3_4.default(0.0, -5.0, 0.0), new Vec3_4.default(0.0, 1.0, 0.0)); //podloga
+            this.top = new Object_3.Plane(new Vec3_4.default(0.0, 80.0, 0.0), new Vec3_4.default(0.0, -1.0, 0.0));
+            this.front = new Object_3.Plane(new Vec3_4.default(0.0, 0.0, 80.0), new Vec3_4.default(0.0, 0.0, -1.0)); //przod
+            this.back = new Object_3.Plane(new Vec3_4.default(0.0, 0.0, -80.0), new Vec3_4.default(0.0, 0.0, 1.0)); // tyl
+            this.leftPlane = new Object_3.Plane(new Vec3_4.default(-80.0, 0.0, 0.0), new Vec3_4.default(1.0, 0.0, 0.0)); // 
+            this.rightPlane = new Object_3.Plane(new Vec3_4.default(80.0, 0.0, 0.0), new Vec3_4.default(-1.0, 0.0, 0.0)); // 
+            this.s1 = new Object_3.Sphere(new Vec3_4.default(-5.0, 0.0, 5.0), 5);
+            this.s2 = new Object_3.Sphere(new Vec3_4.default(5.0, 0.0, 5.0), 5);
+            this.s3 = new Object_3.Sphere(new Vec3_4.default(5.0, 0.0, -5.0), 5);
+            this.s4 = new Object_3.Sphere(new Vec3_4.default(-5.0, 0.0, -5.0), 5);
+            this.s5 = new Object_3.Sphere(new Vec3_4.default(0.0, 5 * Math.sqrt(2), 0.0), 5);
         }
-        if (stop == true) {
-            return;
+        Scene2.prototype.build = function () {
+            if (this.isBuilt)
+                return;
+            var yellow = new Object_3.Material(Color_2.default.yellow);
+            var yellowmirror = new Object_3.Material(Color_2.default.yellow, 0, 0.4);
+            var bluemirror = new Object_3.Material(Color_2.default.blue, 0, 0.4);
+            var blue = new Object_3.Material(Color_2.default.blue);
+            var green = new Object_3.Material(new Color_2.default(51, 255, 51));
+            var greenmirror = new Object_3.Material(new Color_2.default(51, 255, 51), 0, 0.4);
+            var whitemirror = new Object_3.Material(Color_2.default.white, 0, 0.4);
+            var white = new Object_3.Material(Color_2.default.white);
+            var red = new Object_3.Material(Color_2.default.red);
+            var redmirror = new Object_3.Material(Color_2.default.red, 0, 0.4);
+            this.s1.material = bluemirror;
+            this.s2.material = greenmirror;
+            this.s3.material = yellowmirror;
+            this.s4.material = bluemirror;
+            this.s5.material = redmirror;
+            this.front.material = blue;
+            this.bottom.material = white;
+            this.back.material = green;
+            this.leftPlane.material = red;
+            this.rightPlane.material = red;
+            this.top.material = yellow;
+            this.objects.push(this.s1);
+            this.objects.push(this.s2);
+            this.objects.push(this.s3);
+            this.objects.push(this.s4);
+            this.objects.push(this.s5);
+            this.objects.push(this.front);
+            this.objects.push(this.bottom);
+            this.objects.push(this.back);
+            this.objects.push(this.leftPlane);
+            this.objects.push(this.rightPlane);
+            this.objects.push(this.top);
+            this.light = new Vec3_4.default(0, 20, -20);
+            this.isBuilt = true;
+        };
+        Scene2.prototype.update = function (dt, start, now) {
+            var angle = (now - start) * 0.001;
+            this.light.x = (Math.cos(angle) - Math.sin(angle)) * 10;
+            this.light.z = (Math.cos(angle) + Math.sin(angle)) * 10;
+        };
+        return Scene2;
+    }(Scene_2.Scene));
+    exports.Scene2 = Scene2;
+});
+define("App/Scenes/Scene3", ["require", "exports", "Common/Color", "Common/Vec3", "Scene/Scene", "Scene/Object"], function (require, exports, Color_3, Vec3_5, Scene_3, Object_4) {
+    "use strict";
+    var Scene3 = (function (_super) {
+        __extends(Scene3, _super);
+        function Scene3() {
+            _super.apply(this, arguments);
+            this.bottom = new Object_4.Plane(new Vec3_5.default(0.0, -5.0, 0.0), new Vec3_5.default(0.0, 1.0, 0.0)); //podloga
+            this.top = new Object_4.Plane(new Vec3_5.default(0.0, 80.0, 0.0), new Vec3_5.default(0.0, -1.0, 0.0));
+            this.front = new Object_4.Plane(new Vec3_5.default(0.0, 0.0, 80.0), new Vec3_5.default(0.0, 0.0, -1.0)); //przod
+            this.back = new Object_4.Plane(new Vec3_5.default(0.0, 0.0, -80.0), new Vec3_5.default(0.0, 0.0, 1.0)); // tyl
+            this.leftPlane = new Object_4.Plane(new Vec3_5.default(-80.0, 0.0, 0.0), new Vec3_5.default(1.0, 0.0, 0.0)); // 
+            this.rightPlane = new Object_4.Plane(new Vec3_5.default(80.0, 0.0, 0.0), new Vec3_5.default(-1.0, 0.0, 0.0)); // 
+            this.s1 = new Object_4.Sphere(new Vec3_5.default(0.0, 0.0, 0.0), 5);
+            this.s2 = new Object_4.Sphere(new Vec3_5.default(-12.0, 0.0, 0.0), 5);
+            this.s3 = new Object_4.Sphere(new Vec3_5.default(-6.0, 0.0, 12.0), 5);
+            this.s4 = new Object_4.Sphere(new Vec3_5.default(12.0, 0.0, 0.0), 5);
+            this.s5 = new Object_4.Sphere(new Vec3_5.default(6.0, 0.0, 12.0), 5);
         }
-        var dt = now - last;
-        second += dt;
-        last = now;
-        objects[0].pos.x = Math.sin((now - start) * 0.001) * 10;
-        objects[0].pos.z = Math.sin((now - start) * 0.001) * 20;
-        passObject("objects[0]", objects[0]);
-        passCamera("camera", camera);
-        gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-        frames++;
-        if (second > 1000) {
-            fpsElement.textContent = frames.toString();
-            frames = 0;
-            second = 0;
+        Scene3.prototype.build = function () {
+            if (this.isBuilt)
+                return;
+            var yellow = new Object_4.Material(Color_3.default.yellow);
+            var blue = new Object_4.Material(Color_3.default.blue);
+            var bluemirror = new Object_4.Material(Color_3.default.blue, 0, 0.5);
+            var green = new Object_4.Material(new Color_3.default(51, 255, 51));
+            var white = new Object_4.Material(Color_3.default.white);
+            var whitemirror = new Object_4.Material(Color_3.default.white, 0, 0.6);
+            var red = new Object_4.Material(Color_3.default.red);
+            var redmirror = new Object_4.Material(Color_3.default.red, 0, 0.4);
+            var yellowmirror = new Object_4.Material(Color_3.default.yellow, 0, 0.4);
+            this.s1.material = yellowmirror;
+            this.s2.material = red;
+            this.s3.material = green;
+            this.s4.material = blue;
+            this.s5.material = white;
+            this.front.material = red;
+            this.bottom.material = whitemirror;
+            this.back.material = yellow;
+            this.leftPlane.material = green;
+            this.rightPlane.material = blue;
+            this.top.material = white;
+            this.objects.push(this.s1);
+            this.objects.push(this.s2);
+            this.objects.push(this.s3);
+            this.objects.push(this.s4);
+            this.objects.push(this.s5);
+            this.objects.push(this.front);
+            this.objects.push(this.bottom);
+            this.objects.push(this.back);
+            this.objects.push(this.leftPlane);
+            this.objects.push(this.rightPlane);
+            this.objects.push(this.top);
+            this.light = new Vec3_5.default(0, 20, -20);
+            this.isBuilt = true;
+        };
+        Scene3.prototype.update = function (dt, start, now) {
+            var angle = (now - start) * 0.01;
+            this.s2.pos.y = Math.sqrt((Math.sin(angle) + 1) / 2) * 10;
+            this.s3.pos.y = Math.sqrt((Math.sin(angle + Math.PI) + 1) / 2) * 5;
+            this.s4.pos.y = Math.sqrt((Math.sin(angle + Math.PI / 2) + 1) / 2) * 10;
+            this.s5.pos.y = Math.sqrt((Math.sin(angle + Math.PI / 2) + 1) / 2) * 5;
+            this.s2.isDirty = true;
+            this.s3.isDirty = true;
+            this.s4.isDirty = true;
+            this.s5.isDirty = true;
+        };
+        return Scene3;
+    }(Scene_3.Scene));
+    exports.Scene3 = Scene3;
+});
+define("App", ["require", "exports", "Common/Vec3", "Raytracer/WebGLRaytracer", "Scene/Camera", "App/AnimationLoop", "App/Scenes/Scene1", "App/Scenes/Scene2", "App/Scenes/Scene3"], function (require, exports, Vec3_6, WebGLRaytracer_1, Camera_1, AnimationLoop_1, Scene1_1, Scene2_1, Scene3_1) {
+    "use strict";
+    var App = (function () {
+        function App() {
+            var _this = this;
+            this.scenes = [];
+            console.log("run");
+            this.prepareCanvas();
+            this.raytracer = new WebGLRaytracer_1.WebGLRaytracer(this.canvas);
+            this.camera = new Camera_1.Camera(new Vec3_6.default(0, 10, -49), new Vec3_6.default(0, 0, 0), Math.PI / 3, Math.PI / 3 * (this.canvas.height / this.canvas.width));
+            this.loop = new AnimationLoop_1.AnimationLoop();
+            this.raytracer.passCamera("camera", this.camera);
+            this.prepareScenes();
+            this.canvas.addEventListener("mousemove", this.onMouseMove.bind(this));
+            document.addEventListener("keydown", this.onKeyDown.bind(this));
+            var buttons = document.querySelectorAll("button.scene");
+            for (var i = 0; i < buttons.length; i++) {
+                buttons.item(i).addEventListener("click", function (e) {
+                    _this.setScene(_this.scenes[e.target.id]);
+                });
+            }
+            var fpsElement = document.querySelector(".fpsValue");
+            this.loop.start(this.update.bind(this), function (fps) {
+                fpsElement.innerHTML = fps.toString();
+            });
         }
-        requestAnimationFrame(render);
-    }
-    requestAnimationFrame(render);
-    addEventListener('keydown', function (e) {
-        if (e.keyCode == 32) {
-            stop = !stop;
-            if (stop == false)
-                requestAnimationFrame(render);
-        }
-    });
+        App.prototype.prepareScenes = function () {
+            this.scenes.push(new Scene1_1.Scene1());
+            this.scenes.push(new Scene2_1.Scene2());
+            this.scenes.push(new Scene3_1.Scene3());
+            this.setScene(this.scenes[0]);
+        };
+        App.prototype.prepareCanvas = function () {
+            var w = window.innerWidth;
+            var h = window.innerHeight;
+            h = Math.min(window.innerHeight / 1.28, 600);
+            w = h;
+            this.canvas = document.querySelector("#myCanvas");
+            this.canvas.width = w;
+            this.canvas.height = h;
+        };
+        App.prototype.update = function (dt, start, now) {
+            var _this = this;
+            this.currentScene.update(dt, start, now);
+            this.currentScene.objects.forEach(function (obj, index) {
+                if (obj.isDirty) {
+                    _this.raytracer.passObject("objects[" + index + "]", obj);
+                    obj.isDirty = false;
+                }
+            });
+            this.raytracer.passCamera("camera", this.camera);
+            this.raytracer.passLight("light", this.currentScene.light);
+            this.raytracer.draw();
+        };
+        App.prototype.setScene = function (scene) {
+            var _this = this;
+            this.currentScene = scene;
+            scene.build();
+            this.raytracer.setNumberOfObjects(scene.objects.length);
+            scene.objects.forEach(function (obj, index) {
+                _this.raytracer.passObject("objects[" + index + "]", obj);
+                obj.isDirty = false;
+            });
+        };
+        App.prototype.onKeyDown = function (e) {
+            if (e.keyCode == 32) {
+                this.loop.togglePause();
+            }
+            if (e.keyCode == 38) {
+                this.camera.pos.add(this.camera.basis.front);
+            }
+            if (e.keyCode == 40) {
+                this.camera.pos.subtract(this.camera.basis.front);
+            }
+            if (e.keyCode == 39) {
+                this.camera.pos.add(this.camera.basis.right);
+            }
+            if (e.keyCode == 37) {
+                this.camera.pos.subtract(this.camera.basis.right);
+            }
+        };
+        App.prototype.onMouseMove = function (e) {
+            if (e.buttons == 1) {
+                this.camera.yaw += e.movementX * 0.01;
+                this.camera.pitch += e.movementY * 0.01;
+            }
+        };
+        return App;
+    }());
+    var app = new App();
 });
 //# sourceMappingURL=app.js.map

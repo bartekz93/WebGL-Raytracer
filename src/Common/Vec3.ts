@@ -1,3 +1,4 @@
+import Matrix4 from "../Common/Matrix4"
 
 export default class Vec3
 {
@@ -114,5 +115,38 @@ export default class Vec3
     {
         this.subtract(normal.clone().scale(2.0*this.clone().dot(normal)));
         return this;
+    }
+
+    public transformAsRow(mat: Matrix4, w: number=1.0) 
+    {
+        let x, y, z;
+        x = this.x*mat.data[0] + this.y*mat.data[4] + this.z*mat.data[8] + w*mat.data[12];
+        y = this.x*mat.data[1] + this.y*mat.data[5] + this.z*mat.data[9] + w*mat.data[13];
+        z = this.x*mat.data[2] + this.y*mat.data[6] + this.z*mat.data[10] + w*mat.data[14];
+        this.set(x, y, z);
+        return this;
+    }
+
+    public transformAsColumn(mat: Matrix4, w: number=1.0) 
+    {
+        let x, y, z;
+        x = this.x*mat.data[0] + this.y*mat.data[1] + this.z*mat.data[2] + w*mat.data[3];
+        y = this.x*mat.data[4] + this.y*mat.data[5] + this.z*mat.data[6] + w*mat.data[7];
+        z = this.x*mat.data[8] + this.y*mat.data[9] + this.z*mat.data[10] + w*mat.data[11];
+        this.set(x, y, z);
+        return this;
+    }
+
+    public equal(v: Vec3, e: number=0.001) {
+        for (let i=0;i<3;i++) {
+            if (Math.abs(this.data[i] - v.data[i]) > e) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public toString() {
+        return `${this.x}, ${this.y}, ${this.z}`;
     }
 }
