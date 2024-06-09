@@ -1,7 +1,7 @@
 import Color from "../../Common/Color"
 import Vec3 from '../../Common/Vec3'
 import { Scene } from '../../Scene/Scene'
-import { Object, Sphere, Plane, Material } from "../../Scene/Object";
+import { SceneObject, Sphere, Plane, Material } from "../../Scene/Object";
 
 export class Scene2 extends Scene {
     

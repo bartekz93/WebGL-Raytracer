@@ -14,14 +14,14 @@ export class Material {
     }
 }
 
-export abstract class Object extends SceneEntity {
+export abstract class SceneObject extends SceneEntity {
     public material: Material;
     public isDirty: boolean;
 }
 
 
 
-export class Sphere extends Object {
+export class Sphere extends SceneObject {
 
     r: number;
 
@@ -33,7 +33,7 @@ export class Sphere extends Object {
 }
 
 
-export class Plane extends Object {
+export class Plane extends SceneObject {
 
     normal: Vec3;
 

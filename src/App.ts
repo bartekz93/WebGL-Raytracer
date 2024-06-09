@@ -3,7 +3,7 @@ import { WebGLRaytracer } from "./Raytracer/WebGLRaytracer"
 import { Scene } from "./Scene/Scene"
 import { Camera } from "./Scene/Camera"
 import { AnimationLoop } from "./App/AnimationLoop"
-import { Object } from "./Scene/Object";
+import { SceneObject } from "./Scene/Object";
 
 
 
@@ -37,14 +37,16 @@ class App {
 
         let buttons = document.querySelectorAll("button.scene");
         for (let i=0;i<buttons.length;i++) {
-            buttons.item(i).addEventListener("click", (e: MouseEvent) => {
-                this.setScene(this.scenes[(e.target as HTMLElement).id]);    
+            buttons.item(i).addEventListener("click", (e: Event) => {
+                this.setScene(this.scenes[(e.target as HTMLElement).id]);
             });
         }
 
         let fpsElement = document.querySelector(".fpsValue");
         this.loop.start(this.update.bind(this), (fps: number) => {
-            fpsElement.innerHTML = fps.toString();
+            if (fpsElement) {
+                fpsElement.innerHTML = fps.toString();
+            }
         })
         
     }

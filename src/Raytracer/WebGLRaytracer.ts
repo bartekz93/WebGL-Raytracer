@@ -3,7 +3,7 @@ import { Geometry } from "./WebGLDevice"
 import { WebGLDevice } from "./WebGLDevice"
 import { Shaders } from "./Shaders"
 import { Camera } from "../Scene/Camera"
-import { Object, Sphere, Plane, Material } from "../Scene/Object";
+import { SceneObject, Sphere, Plane, Material } from "../Scene/Object";
 
 export class WebGLRaytracer {    
     gl: WebGLRenderingContext;
@@ -11,14 +11,14 @@ export class WebGLRaytracer {
     quad: Geometry;
     program: WebGLProgram;
 
-    numReflections: number = 4;
+    numReflections: number = 10;
     numObjects: number = 11;
 
     constructor(canvas: HTMLCanvasElement) {
-        this.gl = canvas.getContext("experimental-webgl");
+        this.gl = canvas.getContext("experimental-webgl") as WebGLRenderingContext;
         
         if (!this.gl) {
-            this.gl = canvas.getContext("webgl");
+            this.gl = canvas.getContext("webgl") as WebGLRenderingContext;
         }
         
         if (!this.gl) {
@@ -112,7 +112,7 @@ export class WebGLRaytracer {
         this.gl.uniform1f(reflLoc, mat.reflection);
     }
     
-    passObject(name: string, obj: Object)
+    passObject(name: string, obj: SceneObject)
     {
         if (!obj) {
             let typeLoc = this.gl.getUniformLocation(this.program, `${name}.type`);
