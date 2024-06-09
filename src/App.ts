@@ -10,6 +10,7 @@ import { SceneObject } from "./Scene/Object";
 import { Scene1 } from "./App/Scenes/Scene1"
 import { Scene2 } from "./App/Scenes/Scene2"
 import { Scene3 } from "./App/Scenes/Scene3"
+import { Scene4 } from "./App/Scenes/Scene4"
 
 class App {
 
@@ -58,6 +59,7 @@ class App {
         this.scenes.push(new Scene1());
         this.scenes.push(new Scene2());
         this.scenes.push(new Scene3());
+        this.scenes.push(new Scene4());
 
         this.setScene(this.scenes[0]);
     }
