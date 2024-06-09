@@ -25,8 +25,9 @@ body {
 .container {
 	display: flex;
 	width: 100%;
-	height: 100%;
+	height: 100vh;
 	flex-direction: column;
+	overflow: hidden;
 }
 
 .content {
@@ -34,6 +35,7 @@ body {
 	width: 100%;
 	height: 100%;
 	flex-direction: row;
+	overflow: hidden;
 }
 .column-l {
 	display: flex;
@@ -66,6 +68,7 @@ body {
 }
 
 canvas {
+	height: 100%;
 	box-shadow: 1px 1px 10px -4px rgba(122,122,122,1);
 }
 

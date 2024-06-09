@@ -58,15 +58,9 @@ class App {
     }
 
     private prepareCanvas() {
-        let w = window.innerWidth;
-        let h = window.innerHeight;
-
-        h = Math.min(window.innerHeight/1.28, 600);
-        w = h;
-        
         this.canvas = document.querySelector("#myCanvas") as HTMLCanvasElement;
-        this.canvas.width = w;
-        this.canvas.height = h;
+        this.canvas.width = this.canvas.clientHeight;
+        this.canvas.height = this.canvas.clientHeight;
     }
 
     update(dt: number, start: number, now: number) {
