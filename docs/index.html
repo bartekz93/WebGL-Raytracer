@@ -1,0 +1,47 @@
+<html>
+<head>
+    <link rel="stylesheet" href="style.css">
+	<title>WebGL raytracer</title>
+</head>
+
+<body>
+	<div class="container">
+		<div class="header">
+			WebGL Raytracer
+		</div>
+		<div class="content">
+			<div class="column-l">
+				<div style="margin-right: 20px">
+					<div>1. Scene should load in few seconds...</div>
+					<div>2. Move camera with cursors keys</div>
+					<div>3. Ratate camera with mouse and button pressed</div>
+					<div>4. Press space to pause animation</div>
+				</div>
+			</div>
+			<div class="column-c">
+				<canvas id="myCanvas">
+				</canvas>
+			</div>
+			<div class="column-r">
+				<div class="buttons" >
+					<button class="scene" id="0">Scene 1</button>
+					<button class="scene" id="1">Scene 2</button>
+					<button class="scene" id="2">Scene 3</button>
+                    <button class="scene" id="3">Scene 4</button>
+					<div class="fps" style="text-align: center">
+						FPS:
+						<span class="fpsValue">
+						</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+     
+	<script src="require.js"></script>
+	<script src="app.js"></script>
+	<script>
+		require(["App"]);
+	</script>
+</body>
+</html>
