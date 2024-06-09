@@ -19,9 +19,11 @@ class App {
     currentScene: Scene;
     camera: Camera;
     loop: AnimationLoop;
+    keys: { [name:string]: boolean }
 
     constructor() {
         console.log("run");
+        this.prepareInput();
         this.prepareCanvas();
 
         this.raytracer = new WebGLRaytracer(this.canvas);
@@ -34,6 +36,7 @@ class App {
 
         this.canvas.addEventListener("mousemove", this.onMouseMove.bind(this));
         document.addEventListener("keydown", this.onKeyDown.bind(this));
+        document.addEventListener("keyup", this.onKeyUp.bind(this));
 
         let buttons = document.querySelectorAll("button.scene");
         for (let i=0;i<buttons.length;i++) {
@@ -67,6 +70,8 @@ class App {
 
     update(dt: number, start: number, now: number) {
 
+        this.updateInput(dt);
+
         this.currentScene.update(dt, start, now);
         
         this.currentScene.objects.forEach((obj, index) => {
@@ -93,23 +98,40 @@ class App {
         });
     }
 
-    onKeyDown(e: KeyboardEvent) {
-        if (e.keyCode == 32) {
+    prepareInput() {
+        this.keys = {};
+        this.keys['Space'] = false;
+        this.keys['ArrowUp'] = false;
+        this.keys['ArrowDown'] = false;
+        this.keys['ArrowLeft'] = false;
+        this.keys['ArrowRight'] = false;
+    }
+
+    updateInput(dt: number) {
+        let v = 0.05;
+        if (this.keys['Space']) {
             this.loop.togglePause();
         }
-    
-        if (e.keyCode == 38) {
-            this.camera.pos.add(this.camera.basis.front);
+        if (this.keys['ArrowUp']) {
+            this.camera.pos.add(this.camera.basis.front.scale(v*dt));
         }
-        if (e.keyCode == 40) {
-            this.camera.pos.subtract(this.camera.basis.front);
+        if (this.keys['ArrowDown']) {
+            this.camera.pos.subtract(this.camera.basis.front.scale(v*dt));
         }
-        if (e.keyCode == 39) {
-            this.camera.pos.add(this.camera.basis.right);
+        if (this.keys['ArrowRight']) {
+            this.camera.pos.add(this.camera.basis.right.scale(v*dt));
         }
-        if (e.keyCode == 37) {
-            this.camera.pos.subtract(this.camera.basis.right);
+        if (this.keys['ArrowLeft']) {
+            this.camera.pos.subtract(this.camera.basis.right.scale(v*dt));
         }
+    }
+
+    onKeyUp(e: KeyboardEvent) {
+        this.keys[e.key] = false;
+    }
+
+    onKeyDown(e: KeyboardEvent) {
+        this.keys[e.key] = true;
     }
     
     onMouseMove(e: MouseEvent) {
