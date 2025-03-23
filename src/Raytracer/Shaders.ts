@@ -90,7 +90,7 @@ export class Shaders {
 			return min(max(dot(normal, toLight)*attenuation, 0.0), 1.0);
 		}
 		
-		float SphereHitTest(in Object sphere, out Ray ray)
+		float SphereHitTest(in Object sphere, Ray ray)
 		{
 			float b = dot((ray.start - sphere.pos)*2.0, ray.dir);
 			float c = dot((ray.start - sphere.pos), (ray.start - sphere.pos)) - pow(sphere.r, 2.0);
@@ -108,12 +108,12 @@ export class Shaders {
 			return -1.0;
 		}
 		
-		float PlaneHitTest(in Object plane, out Ray ray)
+		float PlaneHitTest(in Object plane, Ray ray)
 		{
 			return dot(plane.pos - ray.start, plane.normal) / dot(ray.dir, plane.normal);
 		}
 		
-		float HitTest(Object obj, out Ray ray) 
+		float HitTest(Object obj, Ray ray) 
 		{
 			if (obj.type == SPHERE) {
 				return SphereHitTest(obj, ray);
